@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,10 +29,31 @@ const Index = () => {
   const [mqttConnected, setMqttConnected] = useState(true);
   const [relays, setRelays] = useState<RelayState[]>([
     { id: 1, name: `${t('relay')} 1`, isActive: false },
-    { id: 2, name: `${t('relay')} 2`, isActive: true },
+    { id: 2, name: `${t('relay')} 2`, isActive: false },
     { id: 3, name: `${t('relay')} 3`, isActive: false },
     { id: 4, name: `${t('relay')} 4`, isActive: false },
   ]);
+
+  const fetchRelayState = async () => {
+    try {
+      const response = await fetch('/api/relays/state');
+      if (response.ok) {
+        const data = await response.json();
+        setRelays(prev => prev.map(relay => ({
+          ...relay,
+          isActive: data[`relay${relay.id}`] || false
+        })));
+      }
+    } catch (error) {
+      console.error('Failed to fetch relay state:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchRelayState();
+    const interval = setInterval(fetchRelayState, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [digitalInputs] = useState<DigitalInputState[]>([
     { id: 1, name: `${t('digital_input')} 1`, isActive: true },

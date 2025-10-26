@@ -32,6 +32,16 @@ const safetySchema = z.object({
   relay4Default: z.boolean(),
 });
 
+const overloadSchema = z.object({
+  enabled: z.boolean(),
+  powerThreshold: z.number().positive("Power threshold must be positive"),
+  disconnectAll: z.boolean(),
+  relay1Disconnect: z.boolean(),
+  relay2Disconnect: z.boolean(),
+  relay3Disconnect: z.boolean(),
+  relay4Disconnect: z.boolean(),
+});
+
 const Settings = () => {
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -60,6 +70,19 @@ const Settings = () => {
     },
   });
 
+  const overloadForm = useForm<z.infer<typeof overloadSchema>>({
+    resolver: zodResolver(overloadSchema),
+    defaultValues: {
+      enabled: false,
+      powerThreshold: 3000,
+      disconnectAll: true,
+      relay1Disconnect: false,
+      relay2Disconnect: false,
+      relay3Disconnect: false,
+      relay4Disconnect: false,
+    },
+  });
+
   const onMqttSubmit = (values: z.infer<typeof mqttSchema>) => {
     console.log("MQTT settings:", values);
     toast({
@@ -73,6 +96,14 @@ const Settings = () => {
     toast({
       title: t('safety_settings_saved'),
       description: t('safety_settings_updated'),
+    });
+  };
+
+  const onOverloadSubmit = (values: z.infer<typeof overloadSchema>) => {
+    console.log("Overload protection settings:", values);
+    toast({
+      title: t('overload_settings_saved'),
+      description: t('overload_settings_updated'),
     });
   };
 
@@ -97,9 +128,9 @@ const Settings = () => {
           <h1 className="text-3xl font-bold text-foreground">{t('settings')}</h1>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+        <div className="columns-1 md:columns-1 lg:columns-2 gap-6 space-y-6">
           {/* MQTT Settings */}
-          <Card>
+          <Card className="break-inside-avoid mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-info"></div>
@@ -243,7 +274,7 @@ const Settings = () => {
           </Card>
 
           {/* Safety Settings */}
-          <Card>
+          <Card className="break-inside-avoid mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-warning"></div>
@@ -349,8 +380,154 @@ const Settings = () => {
             </CardContent>
           </Card>
 
+          {/* Overload Protection */}
+          <Card className="break-inside-avoid mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-destructive"></div>
+                {t('overload_protection')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Form {...overloadForm}>
+                <form onSubmit={overloadForm.handleSubmit(onOverloadSubmit)} className="space-y-4">
+                  <FormField
+                    control={overloadForm.control}
+                    name="enabled"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between">
+                        <FormLabel>{t('enable_overload_protection')}</FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={overloadForm.control}
+                    name="powerThreshold"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('power_threshold')} ({t('watts')})</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder={t('power_threshold_placeholder')}
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            disabled={!overloadForm.watch("enabled")}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={overloadForm.control}
+                    name="disconnectAll"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between">
+                        <FormLabel>{t('disconnect_all_relays')}</FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={!overloadForm.watch("enabled")}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {!overloadForm.watch("disconnectAll") && (
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">{t('relays_to_disconnect')}:</Label>
+                      
+                      <FormField
+                        control={overloadForm.control}
+                        name="relay1Disconnect"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center justify-between">
+                            <FormLabel>{t('relay')} 1</FormLabel>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={!overloadForm.watch("enabled")}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={overloadForm.control}
+                        name="relay2Disconnect"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center justify-between">
+                            <FormLabel>{t('relay')} 2</FormLabel>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={!overloadForm.watch("enabled")}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={overloadForm.control}
+                        name="relay3Disconnect"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center justify-between">
+                            <FormLabel>{t('relay')} 3</FormLabel>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={!overloadForm.watch("enabled")}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={overloadForm.control}
+                        name="relay4Disconnect"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center justify-between">
+                            <FormLabel>{t('relay')} 4</FormLabel>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={!overloadForm.watch("enabled")}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  <Button type="submit" className="w-full">
+                    {t('save_overload_settings')}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+
           {/* System Actions */}
-          <Card>
+          <Card className="break-inside-avoid mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-destructive"></div>
